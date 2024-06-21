@@ -1,8 +1,0 @@
-# Ignore __pycache__ directories
-__pycache__/
-
-# Ignore all .pkl files
-*.pkl
-
-# Ignore requirements.txt
-requirements.txt
