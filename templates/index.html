@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MMA Fight Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #8d4545;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            display: flex;
+            justify-content: space-between;
+        }
+        .form-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .fighter {
+            width: 48%;
+        }
+        .fighter h2 {
+            text-align: center;
+        }
+        .fighter label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        .fighter input, .fighter select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            display: block;
+            width: 150px;
+            padding: 8px;
+            margin: 20px auto;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .results {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .results h2 {
+            margin-bottom: 20px;
+        }
+        .results p {
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MMA Fight Predictor</h1>
+        <form method="POST">
+            <div class="form-row">
+                <div class="fighter">
+                    <h2>Fighter 1</h2>
+                    <label>Height (in inches): <input type="number" step="any" name="height_1" required></label>
+                    <label>Weight (in pounds): <input type="number" step="any" name="weight_1" required></label>
+                    <label>Reach (in inches): <input type="number" step="any" name="reach_1" required></label>
+                    <label>Age: <input type="number" step="any" name="age_1" required></label>
+                    <label>Significant Strikes Landed Per Minute: <input type="number" step="any" name="strikes_1" required></label>
+                    <label>Average Takedowns Landed Per 15 Minutes: <input type="number" step="any" name="takedowns_1" required></label>
+                    <label>Win/Loss Ratio: <input type="number" step="any" name="ratio_1" required></label>
+                    <label>Experience: <input type="number" step="any" name="experience_1" required></label>
+                    <label>Stance:
+                        <select name="stance_1" required>
+                            <option value="Orthodox">Orthodox</option>
+                            <option value="Southpaw">Southpaw</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="fighter">
+                    <h2>Fighter 2</h2>
+                    <label>Height (in inches): <input type="number" step="any" name="height_2" required></label>
+                    <label>Weight (in pounds): <input type="number" step="any" name="weight_2" required></label>
+                    <label>Reach (in inches): <input type="number" step="any" name="reach_2" required></label>
+                    <label>Age: <input type="number" step="any" name="age_2" required></label>
+                    <label>Significant Strikes Landed Per Minute: <input type="number" step="any" name="strikes_2" required></label>
+                    <label>Average Takedowns Landed Per 15 Minutes: <input type="number" step="any" name="takedowns_2" required></label>
+                    <label>Win/Loss Ratio: <input type="number" step="any" name="ratio_2" required></label>
+                    <label>Experience: <input type="number" step="any" name="experience_2" required></label>
+                    <label>Stance:
+                        <select name="stance_2" required>
+                            <option value="Orthodox">Orthodox</option>
+                            <option value="Southpaw">Southpaw</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+            <button type="submit">Predict</button>
+        </form>
+
+        {% if fighter_1_odds is not none and fighter_2_odds is not none %}
+        <div class="results">
+            <h2>Prediction Results</h2>
+            <p>Fighter 1 Win Probability: {{ (fighter_1_odds * 100) | round(2) }}%</p>
+            <p>Fighter 2 Win Probability: {{ (fighter_2_odds * 100) | round(2) }}%</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
