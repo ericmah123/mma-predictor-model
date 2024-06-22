@@ -36,3 +36,17 @@ cd mma-fight-predictor
 pip install -r requirements.txt
 ```
 
+## Usage
+1. Train the model:
+```
+python mma_predictor/models/train.py
+```
+2. Run the Flask app:
+```
+python mma_predictor/app.py
+```
+3. Input all necessary information and enjoy!
+
+
+
+
