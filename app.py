@@ -51,14 +51,8 @@ def predict_fight(fighter_1_stats, fighter_2_stats):
     fighter_1_df = pd.DataFrame([fighter_1_stats], columns=features)
     fighter_2_df = pd.DataFrame([fighter_2_stats], columns=features)
 
-    fighter_1_poly = model_pipeline.named_steps['poly'].transform(fighter_1_df)
-    fighter_2_poly = model_pipeline.named_steps['poly'].transform(fighter_2_df)
-
-    fighter_1_scaled = model_pipeline.named_steps['scaler'].transform(fighter_1_poly)
-    fighter_2_scaled = model_pipeline.named_steps['scaler'].transform(fighter_2_poly)
-
-    fighter_1_prediction = model_pipeline.named_steps['model'].predict_proba(fighter_1_scaled)[0][1]
-    fighter_2_prediction = model_pipeline.named_steps['model'].predict_proba(fighter_2_scaled)[0][1]
+    fighter_1_prediction = model_pipeline.predict_proba(fighter_1_df)[0][1]
+    fighter_2_prediction = model_pipeline.predict_proba(fighter_2_df)[0][1]
 
     fighter_1_odds = fighter_1_prediction / (fighter_1_prediction + fighter_2_prediction)
     fighter_2_odds = fighter_2_prediction / (fighter_1_prediction + fighter_2_prediction)

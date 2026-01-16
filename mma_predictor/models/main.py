@@ -5,7 +5,7 @@ import joblib
 
 # Load and clean the data
 filepath = 'mma_predictor/data/ufc-fighters-statistics.csv'
-data = load_and_clean_data(filepath)
+data = load_and_clean_data(filepath, simulate_outcomes=True)
 
 # Train the model
 model, X_test, y_test = train_model(data)
