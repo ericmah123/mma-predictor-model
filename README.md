@@ -41,12 +41,12 @@ pip install -r requirements.txt
 ```
 python mma_predictor/models/train.py
 ```
+Note: the sample dataset does not include fight outcomes, so the training script uses synthetic labels by default. For real-world validity, supply a dataset that includes an `Outcome` column and update the training call to `simulate_outcomes=False`.
 2. Run the Flask app:
 ```
 python mma_predictor/app.py
 ```
 3. Input all necessary information and enjoy!
-
 
 
 

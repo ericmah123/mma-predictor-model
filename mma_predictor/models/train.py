@@ -92,6 +92,9 @@ def train_model(data):
     return best_model, X_test, y_test
 
 if __name__ == "__main__":
-    data = load_and_clean_data('mma_predictor/data/ufc-fighters-statistics.csv')
+    data = load_and_clean_data(
+        'mma_predictor/data/ufc-fighters-statistics.csv',
+        simulate_outcomes=True
+    )
     model, X_test, y_test = train_model(data)
     print("Model trained and saved successfully.")
