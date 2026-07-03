@@ -3,20 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Predict UFC fight outcomes with a model trained on real fight results.">
     <title>MMA Fight Predictor</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <div id="root"></div>
-    <script>
-        window.__INITIAL_DATA__ = {
-            fighter1Odds: {{ fighter_1_odds if fighter_1_odds is not none else 'null' }},
-            fighter2Odds: {{ fighter_2_odds if fighter_2_odds is not none else 'null' }}
-        };
-    </script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script type="text/babel" src="{{ url_for('static', filename='app.jsx') }}"></script>
+    <main class="page">
+        <header class="hero">
+            <div>
+                <p class="eyebrow">Machine learning · Real UFC data</p>
+                <h1>MMA Fight Predictor</h1>
+                <p class="subtitle">
+                    Pick two UFC fighters and get head-to-head win probabilities from a
+                    gradient-boosted model trained on thousands of real fight outcomes.
+                </p>
+            </div>
+            <div class="hero-card">
+                <h2>How it works</h2>
+                <p>
+                    Every fighter's career stats — striking, grappling, finish rates,
+                    streaks and physical attributes — are compared as differentials.
+                    The model learned from real results, evaluated on fights it never saw.
+                </p>
+            </div>
+        </header>
+
+        <section class="matchup">
+            <div class="fighter-card corner-a">
+                <span class="badge badge-a">Corner A</span>
+                <label for="fighter-a">Fighter</label>
+                <div class="search-wrap">
+                    <input id="fighter-a" type="text" placeholder="Search fighters…"
+                           autocomplete="off" spellcheck="false">
+                    <ul class="suggestions" id="suggestions-a" hidden></ul>
+                </div>
+                <p class="picked" id="picked-a"></p>
+            </div>
+
+            <div class="vs">VS</div>
+
+            <div class="fighter-card corner-b">
+                <span class="badge badge-b">Corner B</span>
+                <label for="fighter-b">Fighter</label>
+                <div class="search-wrap">
+                    <input id="fighter-b" type="text" placeholder="Search fighters…"
+                           autocomplete="off" spellcheck="false">
+                    <ul class="suggestions" id="suggestions-b" hidden></ul>
+                </div>
+                <p class="picked" id="picked-b"></p>
+            </div>
+        </section>
+
+        <div class="actions">
+            <button id="predict-btn" class="predict-btn" disabled>Predict fight</button>
+            <button id="reset-btn" class="reset-btn" type="button">Reset</button>
+        </div>
+        <p class="error" id="error" hidden></p>
+
+        <section class="results" id="results" hidden>
+            <h2 id="verdict"></h2>
+            <div class="prob-bar">
+                <div class="prob-fill" id="prob-fill"></div>
+            </div>
+            <div class="prob-labels">
+                <span id="prob-label-a"></span>
+                <span id="prob-label-b"></span>
+            </div>
+            <table class="compare" id="compare-table">
+                <thead>
+                    <tr><th id="col-a"></th><th>Stat</th><th id="col-b"></th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <p class="disclaimer">
+                Model accuracy on held-out recent fights is ~63%. MMA is volatile —
+                treat this as an informed estimate, not a guarantee.
+            </p>
+        </section>
+    </main>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>
