@@ -1,38 +1,71 @@
+"""Head-to-head fight prediction from fighter snapshots."""
+
+import json
+
 import joblib
 import pandas as pd
 
-# Load the trained model pipeline
-model_pipeline = joblib.load('mma_predictor/models/mma_fight_predictor.pkl')
+from mma_predictor.models.preprocess import MODEL_FEATURES, SNAPSHOT_COLS, diff_row
 
-def predict_fight(fighter_1_stats, fighter_2_stats):
-    # Define feature names
-    features = [
-        'height', 'Weight', 'reach', 'age',
-        'significant_strikes_landed_per_minute', 
-        'average_takedowns_landed_per_15_minutes', 
-        'win_loss_ratio', 'experience',
-        'stance_Orthodox', 'stance_Southpaw'
-    ]
+MODEL_PATH = "mma_predictor/models/mma_fight_predictor.pkl"
+FIGHTER_DB_PATH = "mma_predictor/data/fighters.json"
 
-    # Create the input DataFrame for the prediction
-    fighter_1_df = pd.DataFrame([fighter_1_stats], columns=features)
-    fighter_2_df = pd.DataFrame([fighter_2_stats], columns=features)
+# Snapshot stats surfaced in the UI comparison table.
+COMPARE_STATS = [
+    ("slpm", "Sig. strikes landed/min", True),
+    ("sapm", "Sig. strikes absorbed/min", False),
+    ("td_avg", "Takedowns/15 min", True),
+    ("sub_avg", "Submission attempts/15 min", True),
+    ("ko_rate", "KO win rate", True),
+    ("sub_rate", "Submission win rate", True),
+    ("win_streak", "Current streak", True),
+    ("reach", "Reach (in)", True),
+]
 
-    # Predict the outcome for both fighters using the trained pipeline
-    fighter_1_prediction = model_pipeline.predict_proba(fighter_1_df)[0][1]
-    fighter_2_prediction = model_pipeline.predict_proba(fighter_2_df)[0][1]
 
-    # Calculate the prediction odds
-    fighter_1_odds = fighter_1_prediction / (fighter_1_prediction + fighter_2_prediction)
-    fighter_2_odds = fighter_2_prediction / (fighter_1_prediction + fighter_2_prediction)
+def load_model(path=MODEL_PATH):
+    return joblib.load(path)
 
-    return fighter_1_odds, fighter_2_odds
+
+def load_fighter_db(path=FIGHTER_DB_PATH):
+    with open(path) as f:
+        return json.load(f)
+
+
+def predict_matchup(model, snap_a, snap_b):
+    """Symmetric head-to-head probability that fighter A beats fighter B.
+
+    Averages P(A wins | A-B) with 1 - P(B wins | B-A) so the answer doesn't
+    depend on input order.
+    """
+    row_ab = diff_row(snap_a, snap_b)
+    row_ba = diff_row(snap_b, snap_a)
+    X = pd.DataFrame([row_ab, row_ba])[MODEL_FEATURES]
+    p = model.predict_proba(X)[:, 1]
+    prob_a = (p[0] + (1 - p[1])) / 2
+    return prob_a
+
+
+def comparison(snap_a, snap_b):
+    """Per-stat comparison for the UI: which fighter each stat favors."""
+    out = []
+    for key, label, higher_is_better in COMPARE_STATS:
+        va, vb = snap_a.get(key, 0), snap_b.get(key, 0)
+        if va == vb:
+            favors = None
+        elif (va > vb) == higher_is_better:
+            favors = "a"
+        else:
+            favors = "b"
+        out.append({"stat": label, "a": round(float(va), 2),
+                    "b": round(float(vb), 2), "favors": favors})
+    return out
+
 
 if __name__ == "__main__":
-    # Example fighter stats
-    fighter_1_stats = [71, 135, 72, 29, 7.0, 0.35, 9, 19, 1, 0]  # Ensure these match the order of features
-    fighter_2_stats = [68, 135, 70, 31, 4.31, 0.53, 2.3, 32, 0, 1]  # Ensure these match the order of features
-
-    odds = predict_fight(fighter_1_stats, fighter_2_stats)
-    print(f"Fighter 1 Win Probability: {odds[0] * 100:.2f}%")
-    print(f"Fighter 2 Win Probability: {odds[1] * 100:.2f}%")
+    model = load_model()
+    db = load_fighter_db()
+    names = list(db)[:2]
+    a, b = db[names[0]], db[names[1]]
+    p = predict_matchup(model, a, b)
+    print(f"{names[0]} vs {names[1]}: {p:.1%} / {1 - p:.1%}")

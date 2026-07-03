@@ -1,16 +1,16 @@
-import pandas as pd
-from mma_predictor.models.train import train_model
-from mma_predictor.models.preprocess import load_and_clean_data
-import joblib
+"""Full pipeline: raw CSVs -> training data + fighter DB -> trained model."""
 
-# Load and clean the data
-filepath = 'mma_predictor/data/ufc-fighters-statistics.csv'
-data = load_and_clean_data(filepath, simulate_outcomes=True)
+from mma_predictor.models import train
+from mma_predictor.models.preprocess import DATA_DIR, build_dataset, save_fighter_db
 
-# Train the model
-model, X_test, y_test = train_model(data)
 
-# Save the trained model
-joblib.dump(model, 'mma_predictor/models/mma_fight_predictor.pkl')
+def main():
+    df, snapshots = build_dataset()
+    df.to_csv(f"{DATA_DIR}/training_data.csv", index=False)
+    save_fighter_db(snapshots)
+    print(f"Built {len(df)} training rows and {len(snapshots)} fighter snapshots.")
+    train.main()
 
-print("Model trained and saved successfully.")
+
+if __name__ == "__main__":
+    main()

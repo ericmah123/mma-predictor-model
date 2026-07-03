@@ -1,52 +1,82 @@
 # MMA Fight Predictor
 
-## Overview
+Predict UFC fight outcomes head-to-head. Pick two fighters by name and get
+calibrated win probabilities from a gradient-boosted model trained on
+**thousands of real UFC fight results** (1997–present).
 
-The MMA Fight Predictor is a machine learning application designed to predict the outcomes of MMA fights based on fighter statistics. The project utilizes a Gradient Boosting Classifier to make predictions, incorporating advanced feature engineering and data preprocessing techniques to enhance model performance.
+## How it works
 
-## Technologies
+1. **Real data** — fight results, per-round stats, and fighter attributes
+   scraped from ufcstats.com (via the pre-scraped CSVs published by
+   [Greco1899/scrape_ufc_stats](https://github.com/Greco1899/scrape_ufc_stats)).
+2. **Leakage-free features** — fights are replayed in chronological order;
+   each fighter's career stats (striking rates, takedowns, finish rates,
+   streaks, physical attributes) are snapshotted *before* every fight, so the
+   model never sees information from the fight it's predicting.
+3. **Differential modeling** — the model's inputs are the *differences*
+   between the two fighters (reach diff, strike-rate diff, streak diff, …),
+   which directly encodes the matchup. Predictions are symmetric: swapping
+   the fighters gives mirrored probabilities.
+4. **Honest evaluation** — the test set is the most recent 15% of fights,
+   strictly after all training data.
 
-- Python
-- Flask: For building the web application.
-- Scikit-learn: For machine learning model implementation.
-- Pandas: For data manipulation and preprocessing.
-- Tkinter: For creating a graphical user interface.
-- Joblib: For model serialization and deserialization.
-- HTML/CSS: For creating a responsive web interface.
-- Matplotlib and Seaborn: For data visualization and model performance evaluation.
+**Held-out performance** (704 fights, May 2024 – May 2026):
 
-## Features
+| Metric | Value |
+|---|---|
+| Accuracy | 62.9% |
+| ROC-AUC | 0.680 |
+| Log loss | 0.646 |
 
-- Machine Learning Model: Utilizes Gradient Boosting Classifier with PolynomialFeatures and StandardScaler for accurate predictions.
-- Data Preprocessing: Handles missing values, unit conversions, feature creation, and one-hot encoding to prepare high-quality input data.
-- Web Application: Built with Flask, providing a clean and responsive HTML/CSS interface for user interactions.
-- Model Persistence: Uses joblib for efficient saving and loading of the trained model.
-- Model Evaluation: Visualizes performance using confusion matrices and ROC curves.
+For context, published UFC prediction models typically land between 62–68%,
+with a practical ceiling around 70% given the sport's volatility.
 
-## Installation
+## Stack
 
-1. Clone repository
-```
-git clone https://github.com/ericmah123/mma-predictor-model.git
-cd mma-fight-predictor
-```
+- **Model**: scikit-learn Gradient Boosting + isotonic calibration
+- **Backend**: Flask JSON API (`/api/fighters` search, `/api/predict`)
+- **Frontend**: vanilla JS — fighter autocomplete, async predictions,
+  probability bar, and a per-stat comparison table
 
-2. Install the dependencies:
-```
+## Setup
+
+```bash
 pip install -r requirements.txt
 ```
 
 ## Usage
-1. Train the model:
-```
-python mma_predictor/models/train.py
-```
-Note: the sample dataset does not include fight outcomes, so the training script uses synthetic labels by default. For real-world validity, supply a dataset that includes an `Outcome` column and update the training call to `simulate_outcomes=False`.
-2. Run the Flask app:
-```
-python mma_predictor/app.py
-```
-3. Input all necessary information and enjoy!
 
+Run the app (a trained model and fighter database ship with the repo):
 
+```bash
+python app.py
+# open http://127.0.0.1:5000
+```
 
+Retrain from scratch (rebuilds the training set, fighter DB, and model):
+
+```bash
+python -m mma_predictor.models.main
+```
+
+Refresh the underlying data by re-downloading the CSVs in
+`mma_predictor/data/` from
+[Greco1899/scrape_ufc_stats](https://github.com/Greco1899/scrape_ufc_stats),
+then retrain.
+
+## API
+
+```bash
+# Search fighters by name
+curl 'http://127.0.0.1:5000/api/fighters?q=jones'
+
+# Predict a matchup
+curl -X POST http://127.0.0.1:5000/api/predict \
+  -H 'Content-Type: application/json' \
+  -d '{"fighter_a": "Jon Jones", "fighter_b": "Stipe Miocic"}'
+```
+
+## Disclaimer
+
+Predictions are informed estimates from historical statistics — not betting
+advice. MMA is one of the most volatile sports to predict.

@@ -1,63 +1,71 @@
-from flask import Flask, render_template, request
-import joblib
-import pandas as pd
+import os
 
-app = Flask(__name__, static_folder='static', template_folder='templates')
+from flask import Flask, jsonify, render_template, request
 
-model_pipeline = joblib.load('mma_predictor/models/mma_fight_predictor.pkl')
+from mma_predictor.models.predict import (
+    comparison,
+    load_fighter_db,
+    load_model,
+    predict_matchup,
+)
 
-@app.route('/', methods=['GET', 'POST'])
+app = Flask(__name__, static_folder="static", template_folder="templates")
+
+model = load_model()
+fighter_db = load_fighter_db()
+# Case-insensitive name index for lookup.
+name_index = {name.lower(): name for name in fighter_db}
+
+
+@app.route("/")
 def index():
-    if request.method == 'POST':
-        fighter_1_stats = [
-            float(request.form['height_1']),
-            float(request.form['weight_1']),
-            float(request.form['reach_1']),
-            float(request.form['age_1']),
-            float(request.form['strikes_1']),
-            float(request.form['takedowns_1']),
-            float(request.form['ratio_1']),
-            float(request.form['experience_1']),
-            1 if request.form['stance_1'] == 'Orthodox' else 0,
-            0 if request.form['stance_1'] == 'Orthodox' else 1
-        ]
-        
-        fighter_2_stats = [
-            float(request.form['height_2']),
-            float(request.form['weight_2']),
-            float(request.form['reach_2']),
-            float(request.form['age_2']),
-            float(request.form['strikes_2']),
-            float(request.form['takedowns_2']),
-            float(request.form['ratio_2']),
-            float(request.form['experience_2']),
-            1 if request.form['stance_2'] == 'Orthodox' else 0,
-            0 if request.form['stance_2'] == 'Orthodox' else 1
-        ]
-        
-        fighter_1_odds, fighter_2_odds = predict_fight(fighter_1_stats, fighter_2_stats)
-        return render_template('index.html', fighter_1_odds=fighter_1_odds, fighter_2_odds=fighter_2_odds)
-    return render_template('index.html', fighter_1_odds=None, fighter_2_odds=None)
+    return render_template("index.html")
 
-def predict_fight(fighter_1_stats, fighter_2_stats):
-    features = [
-        'height', 'Weight', 'reach', 'age',
-        'significant_strikes_landed_per_minute', 
-        'average_takedowns_landed_per_15_minutes', 
-        'win_loss_ratio', 'experience',
-        'stance_Orthodox', 'stance_Southpaw'
+
+@app.route("/api/fighters")
+def search_fighters():
+    query = request.args.get("q", "").strip().lower()
+    if len(query) < 2:
+        return jsonify([])
+    matches = [
+        {"name": fighter_db[real]["name"],
+         "record": f"{int(fighter_db[real]['wins'])}-{int(fighter_db[real]['losses'])}",
+         "fights": int(fighter_db[real]["n_fights"])}
+        for lower, real in name_index.items() if query in lower
     ]
+    matches.sort(key=lambda m: -m["fights"])
+    return jsonify(matches[:10])
 
-    fighter_1_df = pd.DataFrame([fighter_1_stats], columns=features)
-    fighter_2_df = pd.DataFrame([fighter_2_stats], columns=features)
 
-    fighter_1_prediction = model_pipeline.predict_proba(fighter_1_df)[0][1]
-    fighter_2_prediction = model_pipeline.predict_proba(fighter_2_df)[0][1]
+@app.route("/api/predict", methods=["POST"])
+def predict():
+    body = request.get_json(silent=True) or {}
+    name_a = str(body.get("fighter_a", "")).strip()
+    name_b = str(body.get("fighter_b", "")).strip()
 
-    fighter_1_odds = fighter_1_prediction / (fighter_1_prediction + fighter_2_prediction)
-    fighter_2_odds = fighter_2_prediction / (fighter_1_prediction + fighter_2_prediction)
+    if not name_a or not name_b:
+        return jsonify({"error": "Both fighters are required."}), 400
+    if name_a.lower() == name_b.lower():
+        return jsonify({"error": "Pick two different fighters."}), 400
 
-    return fighter_1_odds, fighter_2_odds
+    snaps = []
+    for name in (name_a, name_b):
+        real = name_index.get(name.lower())
+        if real is None:
+            return jsonify({"error": f"Fighter not found: {name}"}), 404
+        snaps.append(fighter_db[real])
+    snap_a, snap_b = snaps
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    prob_a = predict_matchup(model, snap_a, snap_b)
+    return jsonify({
+        "fighter_a": {"name": snap_a["name"], "prob": round(float(prob_a), 4),
+                      "record": f"{int(snap_a['wins'])}-{int(snap_a['losses'])}"},
+        "fighter_b": {"name": snap_b["name"], "prob": round(float(1 - prob_a), 4),
+                      "record": f"{int(snap_b['wins'])}-{int(snap_b['losses'])}"},
+        "comparison": comparison(snap_a, snap_b),
+    })
+
+
+if __name__ == "__main__":
+    app.run(debug=os.environ.get("FLASK_DEBUG", "0") == "1",
+            host="127.0.0.1", port=int(os.environ.get("PORT", 5000)))
