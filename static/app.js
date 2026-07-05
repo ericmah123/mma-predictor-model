@@ -76,6 +76,17 @@
     errorEl.hidden = false;
   }
 
+  var justifyBtn = document.getElementById("justify-btn");
+  var justifyCard = document.getElementById("justify-card");
+
+  function renderMethod(method) {
+    var mapping = { KO: "method-ko-value", Sub: "method-sub-value", Dec: "method-dec-value" };
+    Object.keys(mapping).forEach(function (cls) {
+      var p = method && method[cls] != null ? Math.round(method[cls] * 100) : 0;
+      document.getElementById(mapping[cls]).textContent = p + "%";
+    });
+  }
+
   function renderResults(data) {
     var a = data.fighter_a, b = data.fighter_b;
     var pa = Math.round(a.prob * 100), pb = 100 - pa;
@@ -88,6 +99,12 @@
     document.getElementById("prob-label-b").textContent = pb + "% — " + b.name;
     document.getElementById("col-a").textContent = a.name;
     document.getElementById("col-b").textContent = b.name;
+    renderMethod(data.method);
+
+    justifyBtn.hidden = false;
+    justifyBtn.disabled = false;
+    justifyBtn.textContent = "✨ Explain this pick";
+    justifyCard.hidden = true;
 
     var tbody = document.querySelector("#compare-table tbody");
     tbody.innerHTML = "";
@@ -134,6 +151,40 @@
       .finally(function () {
         predictBtn.textContent = "Predict fight";
         updateButton();
+      });
+  });
+
+  justifyBtn.addEventListener("click", function () {
+    justifyBtn.disabled = true;
+    justifyBtn.textContent = "Analyzing…";
+
+    fetch("/api/justify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fighter_a: selected.a, fighter_b: selected.b })
+    })
+      .then(function (r) {
+        return r.json().then(function (data) {
+          if (!r.ok) {
+            var err = new Error(data.error || "Analysis failed.");
+            err.status = r.status;
+            throw err;
+          }
+          return data;
+        });
+      })
+      .then(function (data) {
+        document.getElementById("justify-text").textContent = data.justification;
+        justifyCard.hidden = false;
+        justifyBtn.hidden = true;
+      })
+      .catch(function (err) {
+        if (err.status === 503) {
+          justifyBtn.hidden = true; // feature not configured
+        } else {
+          justifyBtn.disabled = false;
+          justifyBtn.textContent = "✨ Explain this pick (retry)";
+        }
       });
   });
 

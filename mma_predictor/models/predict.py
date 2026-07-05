@@ -8,6 +8,7 @@ import pandas as pd
 from mma_predictor.models.preprocess import MODEL_FEATURES, SNAPSHOT_COLS, diff_row
 
 MODEL_PATH = "mma_predictor/models/mma_fight_predictor.pkl"
+METHOD_MODEL_PATH = "mma_predictor/models/mma_method_predictor.pkl"
 FIGHTER_DB_PATH = "mma_predictor/data/fighters.json"
 
 # Snapshot stats surfaced in the UI comparison table.
@@ -24,6 +25,10 @@ COMPARE_STATS = [
 
 
 def load_model(path=MODEL_PATH):
+    return joblib.load(path)
+
+
+def load_method_model(path=METHOD_MODEL_PATH):
     return joblib.load(path)
 
 
@@ -44,6 +49,14 @@ def predict_matchup(model, snap_a, snap_b):
     p = model.predict_proba(X)[:, 1]
     prob_a = (p[0] + (1 - p[1])) / 2
     return prob_a
+
+
+def predict_method(method_model, snap_a, snap_b):
+    """Fight-level finish-type probabilities, symmetric in input order."""
+    X = pd.DataFrame([diff_row(snap_a, snap_b), diff_row(snap_b, snap_a)])[MODEL_FEATURES]
+    probs = method_model.predict_proba(X).mean(axis=0)
+    return {cls: round(float(p), 4)
+            for cls, p in zip(method_model.classes_, probs)}
 
 
 def comparison(snap_a, snap_b):

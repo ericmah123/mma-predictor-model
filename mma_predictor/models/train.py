@@ -16,6 +16,7 @@ from sklearn.preprocessing import StandardScaler
 from mma_predictor.models.preprocess import MODEL_FEATURES
 
 MODEL_PATH = "mma_predictor/models/mma_fight_predictor.pkl"
+METHOD_MODEL_PATH = "mma_predictor/models/mma_method_predictor.pkl"
 
 
 def make_model():
@@ -31,6 +32,36 @@ def make_model():
         ("scaler", StandardScaler()),
         ("clf", CalibratedClassifierCV(gbc, method="isotonic", cv=3)),
     ])
+
+
+def make_method_model():
+    """3-class (KO / Sub / Dec) finish-type model — softmax probs for display."""
+    return Pipeline([
+        ("scaler", StandardScaler()),
+        ("clf", GradientBoostingClassifier(
+            n_estimators=300,
+            learning_rate=0.03,
+            max_depth=3,
+            subsample=0.8,
+            min_samples_leaf=20,
+            random_state=42,
+        )),
+    ])
+
+
+def train_method_model(df, test_frac=0.15):
+    df = df.sort_values("date").reset_index(drop=True)
+    split = int(len(df) * (1 - test_frac))
+    train, test = df.iloc[:split], df.iloc[split:]
+
+    model = make_method_model()
+    model.fit(train[MODEL_FEATURES], train["method"])
+    acc = accuracy_score(test["method"], model.predict(test[MODEL_FEATURES]))
+    base_rate = test["method"].value_counts(normalize=True).max()
+
+    final = make_method_model()
+    final.fit(df[MODEL_FEATURES], df["method"])
+    return final, {"accuracy": acc, "base_rate": base_rate}
 
 
 def train_and_evaluate(df, test_frac=0.15):
@@ -71,6 +102,12 @@ def main():
     print(f"  Log loss: {metrics['log_loss']:.4f}")
     print(f"  Brier:    {metrics['brier']:.4f}")
     print(f"Saved model -> {MODEL_PATH}")
+
+    method_model, m = train_method_model(df)
+    joblib.dump(method_model, METHOD_MODEL_PATH)
+    print(f"Method model: accuracy {m['accuracy']:.4f} "
+          f"(majority-class base rate {m['base_rate']:.4f})")
+    print(f"Saved method model -> {METHOD_MODEL_PATH}")
 
 
 if __name__ == "__main__":

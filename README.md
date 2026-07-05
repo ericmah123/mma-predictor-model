@@ -20,13 +20,19 @@ calibrated win probabilities from a gradient-boosted model trained on
 4. **Honest evaluation** — the test set is the most recent 15% of fights,
    strictly after all training data.
 
+The feature set includes a chronologically-computed **Elo rating** per fighter
+(K=32, K=40 for finishes), updated after every fight in the replay — the
+current top of the Elo table is Jon Jones, Islam Makhachev, and GSP, which is
+a good sanity check. A second model predicts the **method of victory**
+(KO/TKO, Submission, or Decision) shown as "Likely finish" probabilities.
+
 **Held-out performance** (704 fights, May 2024 – May 2026):
 
 | Metric | Value |
 |---|---|
-| Accuracy | 62.9% |
+| Accuracy | 63.4% |
 | ROC-AUC | 0.680 |
-| Log loss | 0.646 |
+| Log loss | 0.644 |
 
 For context, published UFC prediction models typically land between 62–68%,
 with a practical ceiling around 70% given the sport's volatility.
@@ -46,17 +52,19 @@ pip install -r requirements.txt
 
 ## Usage
 
-Run the app (a trained model and fighter database ship with the repo):
+Train the models first (model files are gitignored; the data CSVs ship with
+the repo — this rebuilds the training set, fighter DB, and both models in a
+couple of minutes):
+
+```bash
+python -m mma_predictor.models.main
+```
+
+Then run the app:
 
 ```bash
 python app.py
 # open http://127.0.0.1:5000
-```
-
-Retrain from scratch (rebuilds the training set, fighter DB, and model):
-
-```bash
-python -m mma_predictor.models.main
 ```
 
 Refresh the underlying data by re-downloading the CSVs in
@@ -70,11 +78,28 @@ then retrain.
 # Search fighters by name
 curl 'http://127.0.0.1:5000/api/fighters?q=jones'
 
-# Predict a matchup
+# Predict a matchup (win probs + likely finish + stat comparison)
 curl -X POST http://127.0.0.1:5000/api/predict \
   -H 'Content-Type: application/json' \
   -d '{"fighter_a": "Jon Jones", "fighter_b": "Stipe Miocic"}'
+
+# AI-generated analysis of the pick (requires GEMINI_API_KEY)
+curl -X POST http://127.0.0.1:5000/api/justify \
+  -H 'Content-Type: application/json' \
+  -d '{"fighter_a": "Jon Jones", "fighter_b": "Stipe Miocic"}'
 ```
+
+## AI justification (optional)
+
+The "✨ Explain this pick" button asks Google Gemini (free tier) for a short
+analyst-style blurb grounded in the model's own numbers. To enable it, get a
+free API key from https://aistudio.google.com/apikey and run the app with:
+
+```bash
+GEMINI_API_KEY=your-key python app.py
+```
+
+Without the key the app works normally — the button simply hides.
 
 ## Disclaimer
 

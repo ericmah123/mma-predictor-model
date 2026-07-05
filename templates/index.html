@@ -69,12 +69,38 @@
                 <span id="prob-label-a"></span>
                 <span id="prob-label-b"></span>
             </div>
+            <div class="method-section">
+                <h3>Likely finish</h3>
+                <div class="method-chips">
+                    <div class="method-chip" id="method-ko">
+                        <span class="method-label">KO/TKO</span>
+                        <span class="method-value" id="method-ko-value"></span>
+                    </div>
+                    <div class="method-chip" id="method-sub">
+                        <span class="method-label">Submission</span>
+                        <span class="method-value" id="method-sub-value"></span>
+                    </div>
+                    <div class="method-chip" id="method-dec">
+                        <span class="method-label">Decision</span>
+                        <span class="method-value" id="method-dec-value"></span>
+                    </div>
+                </div>
+            </div>
             <table class="compare" id="compare-table">
                 <thead>
                     <tr><th id="col-a"></th><th>Stat</th><th id="col-b"></th></tr>
                 </thead>
                 <tbody></tbody>
             </table>
+            <div class="justify-section">
+                <button id="justify-btn" class="justify-btn" type="button">
+                    ✨ Explain this pick
+                </button>
+                <div class="justify-card" id="justify-card" hidden>
+                    <p id="justify-text"></p>
+                    <p class="justify-note">AI-generated analysis — based only on the model's statistics.</p>
+                </div>
+            </div>
             <p class="disclaimer">
                 Model accuracy on held-out recent fights is ~63%. MMA is volatile —
                 treat this as an informed estimate, not a guarantee.

@@ -304,6 +304,101 @@ body {
     color: var(--accent-b);
 }
 
+.method-section {
+    margin-top: 28px;
+    text-align: center;
+}
+
+.method-section h3 {
+    margin: 0 0 14px;
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+}
+
+.method-chips {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.method-chip {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 110px;
+    padding: 12px 20px;
+    border-radius: 14px;
+    background: rgba(11, 14, 25, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.method-label {
+    font-size: 0.78rem;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.method-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.justify-section {
+    margin-top: 28px;
+    text-align: center;
+}
+
+.justify-btn {
+    background: transparent;
+    color: #cbb2ff;
+    border: 1px solid rgba(140, 93, 255, 0.5);
+    padding: 12px 28px;
+    border-radius: 999px;
+    font-size: 0.98rem;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.justify-btn:hover:not(:disabled) {
+    background: rgba(140, 93, 255, 0.12);
+    border-color: rgba(140, 93, 255, 0.8);
+}
+
+.justify-btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.justify-btn:focus-visible {
+    outline: 2px solid var(--accent-a);
+    outline-offset: 2px;
+}
+
+.justify-card {
+    margin-top: 18px;
+    padding: 22px 26px;
+    text-align: left;
+    background: rgba(140, 93, 255, 0.08);
+    border: 1px solid rgba(140, 93, 255, 0.3);
+    border-radius: 16px;
+}
+
+.justify-card p {
+    margin: 0;
+    line-height: 1.6;
+}
+
+.justify-note {
+    margin-top: 12px !important;
+    font-size: 0.8rem;
+    color: var(--text-soft);
+}
+
 .compare {
     width: 100%;
     margin-top: 28px;

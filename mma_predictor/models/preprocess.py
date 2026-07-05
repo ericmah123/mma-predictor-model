@@ -22,10 +22,15 @@ DATA_DIR = "mma_predictor/data"
 # Features stored per fighter snapshot.
 SNAPSHOT_COLS = [
     "height", "reach", "age", "stance_code",
-    "wins", "losses", "win_streak",
+    "wins", "losses", "win_streak", "elo",
     "slpm", "sapm", "td_avg", "sub_avg", "kd_avg", "ctrl_avg",
     "ko_rate", "sub_rate",
 ]
+
+# Elo settings: standard logistic Elo, larger K for finishes.
+ELO_START = 1500.0
+ELO_K = 32.0
+ELO_K_FINISH = 40.0
 
 # Differential features fed to the model (A minus B for each).
 DIFF_FEATURES = [f"{c}_diff" for c in SNAPSHOT_COLS if c != "stance_code"]
@@ -129,9 +134,18 @@ def aggregate_fight_stats(stats):
     return {(r.EVENT, r.BOUT, r.FIGHTER): r for r in agg.itertuples(index=False)}
 
 
+def _method_class(method):
+    """Collapse the METHOD string into KO / Sub / Dec."""
+    if "KO/TKO" in method:
+        return "KO"
+    if "Submission" in method:
+        return "Sub"
+    return "Dec"
+
+
 def _new_career():
     return {
-        "n": 0, "wins": 0, "losses": 0, "streak": 0,
+        "n": 0, "wins": 0, "losses": 0, "streak": 0, "elo": ELO_START,
         "sig_landed": 0.0, "sig_absorbed": 0.0, "td": 0.0, "sub_att": 0.0,
         "kd": 0.0, "ctrl": 0.0, "seconds": 0.0, "ko_wins": 0, "sub_wins": 0,
     }
@@ -153,6 +167,7 @@ def _snapshot(career, attrs, fight_date):
         "wins": float(wins),
         "losses": float(losses),
         "win_streak": float(career["streak"]),
+        "elo": career["elo"],
         "slpm": career["sig_landed"] / minutes if minutes > 0 else 0.0,
         "sapm": career["sig_absorbed"] / minutes if minutes > 0 else 0.0,
         "td_avg": career["td"] / minutes * 15 if minutes > 0 else 0.0,
@@ -217,7 +232,8 @@ def build_dataset(seed=42):
             else:
                 a, b, fa, fb = s2, s1, f2, f1
             row = {"fighter_a": fa, "fighter_b": fb, "date": r.date,
-                   "label": 1 if winner == fa else 0}
+                   "label": 1 if winner == fa else 0,
+                   "method": _method_class(str(r.METHOD))}
             row.update(diff_row(a, b))
             rows.append(row)
 
@@ -247,6 +263,14 @@ def build_dataset(seed=42):
             else:
                 career["losses"] += 1
                 career["streak"] = min(career["streak"], 0) - 1
+
+        # Elo update (winner/loser already decided; draws/NC were skipped).
+        loser = f2 if winner == f1 else f1
+        k = ELO_K_FINISH if ("KO/TKO" in method or "Submission" in method) else ELO_K
+        expected_winner = 1.0 / (1.0 + 10 ** ((careers[loser]["elo"] - careers[winner]["elo"]) / 400.0))
+        delta = k * (1.0 - expected_winner)
+        careers[winner]["elo"] += delta
+        careers[loser]["elo"] -= delta
 
     df = pd.DataFrame(rows).dropna(subset=MODEL_FEATURES)
 
