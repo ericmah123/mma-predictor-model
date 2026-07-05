@@ -5,13 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Predict UFC fight outcomes with a model trained on real fight results.">
     <title>MMA Fight Predictor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=Inter:wght@400;600&family=Oswald:wght@500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
     <main class="page">
         <header class="hero">
             <div>
-                <p class="eyebrow">Machine learning · Real UFC data</p>
+                <p class="meta-tag">Gradient-boosted model · Real UFC fights since 1997</p>
                 <h1>MMA Fight Predictor</h1>
                 <p class="subtitle">
                     Pick two UFC fighters and get head-to-head win probabilities from a
@@ -29,26 +32,32 @@
         </header>
 
         <section class="matchup">
-            <div class="fighter-card corner-a">
+            <div class="fighter-card corner-a" id="card-a">
                 <span class="badge badge-a">Corner A</span>
                 <label for="fighter-a">Fighter</label>
                 <div class="search-wrap">
                     <input id="fighter-a" type="text" placeholder="Search fighters…"
-                           autocomplete="off" spellcheck="false">
-                    <ul class="suggestions" id="suggestions-a" hidden></ul>
+                           autocomplete="off" spellcheck="false"
+                           role="combobox" aria-expanded="false" aria-autocomplete="list"
+                           aria-controls="suggestions-a">
+                    <ul class="suggestions" id="suggestions-a" role="listbox"
+                        aria-label="Corner A fighter suggestions" hidden></ul>
                 </div>
                 <p class="picked" id="picked-a"></p>
             </div>
 
             <div class="vs">VS</div>
 
-            <div class="fighter-card corner-b">
+            <div class="fighter-card corner-b" id="card-b">
                 <span class="badge badge-b">Corner B</span>
                 <label for="fighter-b">Fighter</label>
                 <div class="search-wrap">
                     <input id="fighter-b" type="text" placeholder="Search fighters…"
-                           autocomplete="off" spellcheck="false">
-                    <ul class="suggestions" id="suggestions-b" hidden></ul>
+                           autocomplete="off" spellcheck="false"
+                           role="combobox" aria-expanded="false" aria-autocomplete="list"
+                           aria-controls="suggestions-b">
+                    <ul class="suggestions" id="suggestions-b" role="listbox"
+                        aria-label="Corner B fighter suggestions" hidden></ul>
                 </div>
                 <p class="picked" id="picked-b"></p>
             </div>
@@ -58,23 +67,26 @@
             <button id="predict-btn" class="predict-btn" disabled>Predict fight</button>
             <button id="reset-btn" class="reset-btn" type="button">Reset</button>
         </div>
-        <p class="error" id="error" hidden></p>
+        <p class="error" id="error" role="alert" hidden></p>
 
-        <section class="results" id="results" hidden>
+        <section class="results" id="results" aria-live="polite" hidden>
             <h2 id="verdict"></h2>
             <div class="prob-bar">
-                <div class="prob-fill" id="prob-fill"></div>
+                <div class="prob-fill-a" id="prob-fill-a"></div>
+                <div class="prob-fill-b" id="prob-fill-b"></div>
             </div>
             <div class="prob-labels">
                 <span id="prob-label-a"></span>
                 <span id="prob-label-b"></span>
             </div>
-            <table class="compare" id="compare-table">
-                <thead>
-                    <tr><th id="col-a"></th><th>Stat</th><th id="col-b"></th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+            <div class="compare-scroll">
+                <table class="compare" id="compare-table">
+                    <thead>
+                        <tr><th id="col-a" scope="col"></th><th scope="col">Stat</th><th id="col-b" scope="col"></th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
             <p class="disclaimer">
                 Model accuracy on held-out recent fights is ~63%. MMA is volatile —
                 treat this as an informed estimate, not a guarantee.
