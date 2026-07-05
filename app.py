@@ -1,6 +1,9 @@
 import os
 
+from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
+
+load_dotenv()
 
 from mma_predictor.models.justify import (
     JustificationFailed,
