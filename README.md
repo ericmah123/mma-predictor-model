@@ -83,7 +83,7 @@ curl -X POST http://127.0.0.1:5000/api/predict \
   -H 'Content-Type: application/json' \
   -d '{"fighter_a": "Jon Jones", "fighter_b": "Stipe Miocic"}'
 
-# AI-generated analysis of the pick (requires GEMINI_API_KEY)
+# AI-generated analysis of the pick (requires OPENROUTER_API_KEY)
 curl -X POST http://127.0.0.1:5000/api/justify \
   -H 'Content-Type: application/json' \
   -d '{"fighter_a": "Jon Jones", "fighter_b": "Stipe Miocic"}'
@@ -91,13 +91,18 @@ curl -X POST http://127.0.0.1:5000/api/justify \
 
 ## AI justification (optional)
 
-The "✨ Explain this pick" button asks Google Gemini (free tier) for a short
-analyst-style blurb grounded in the model's own numbers. To enable it, get a
-free API key from https://aistudio.google.com/apikey and run the app with:
+The "✨ Explain this pick" button asks an LLM via [OpenRouter](https://openrouter.ai)
+for a short analyst-style blurb grounded in the model's own numbers. To enable
+it, get an API key from https://openrouter.ai/keys, copy `.env.example` to
+`.env`, and set:
 
-```bash
-GEMINI_API_KEY=your-key python app.py
 ```
+OPENROUTER_API_KEY=your-key
+```
+
+Then run the app as usual (`python app.py`) — it's loaded automatically via
+`python-dotenv`. By default it uses the free `meta-llama/llama-3.3-70b-instruct:free`
+model; override with `OPENROUTER_MODEL` to use a different OpenRouter model id.
 
 Without the key the app works normally — the button simply hides.
 
