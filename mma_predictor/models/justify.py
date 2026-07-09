@@ -1,6 +1,6 @@
-"""AI-generated fight analysis via OpenRouter.
+"""AI-generated fight analysis via the Google Gemini free tier.
 
-Requires the OPENROUTER_API_KEY environment variable. The prompt is built
+Requires the GEMINI_API_KEY environment variable. The prompt is built
 strictly from the model's own prediction payload so the blurb stays
 grounded in the data.
 """
@@ -9,17 +9,19 @@ import os
 
 import requests
 
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-DEFAULT_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+GEMINI_URL = (
+    "https://generativelanguage.googleapis.com/v1beta/"
+    "models/gemini-flash-latest:generateContent"
+)
 TIMEOUT_SECONDS = 15
 
 
 class JustificationUnavailable(Exception):
-    """OPENROUTER_API_KEY is not configured."""
+    """GEMINI_API_KEY is not configured."""
 
 
 class JustificationFailed(Exception):
-    """The upstream OpenRouter call failed."""
+    """The upstream Gemini call failed."""
 
 
 def build_prompt(result):
@@ -50,24 +52,19 @@ def build_prompt(result):
 
 
 def generate_justification(result):
-    api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not api_key:
         raise JustificationUnavailable()
 
-    model = os.environ.get("OPENROUTER_MODEL", "").strip() or DEFAULT_MODEL
-
     try:
         resp = requests.post(
-            OPENROUTER_URL,
-            headers={"Authorization": f"Bearer {api_key}"},
-            json={
-                "model": model,
-                "messages": [{"role": "user", "content": build_prompt(result)}],
-            },
+            GEMINI_URL,
+            headers={"x-goog-api-key": api_key},
+            json={"contents": [{"parts": [{"text": build_prompt(result)}]}]},
             timeout=TIMEOUT_SECONDS,
         )
         resp.raise_for_status()
         data = resp.json()
-        return data["choices"][0]["message"]["content"].strip()
+        return data["candidates"][0]["content"]["parts"][0]["text"].strip()
     except (requests.RequestException, KeyError, IndexError, ValueError) as exc:
         raise JustificationFailed(str(exc)) from exc
