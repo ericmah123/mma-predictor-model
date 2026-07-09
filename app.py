@@ -104,7 +104,8 @@ def justify():
         analysis = generate_justification(_prediction_payload(snap_a, snap_b))
     except JustificationUnavailable:
         return jsonify({"error": "AI justification unavailable"}), 503
-    except JustificationFailed:
+    except JustificationFailed as exc:
+        print(f"[justify] Gemini call failed: {exc}", flush=True)
         return jsonify({"error": "AI analysis failed, try again later."}), 502
 
     justification_cache[cache_key] = analysis

@@ -107,7 +107,9 @@ def generate_justification(result):
         resp.raise_for_status()
         data = resp.json()
         text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+    except requests.HTTPError as exc:
+        raise JustificationFailed(f"{exc} - body: {resp.text[:500]}") from exc
     except (requests.RequestException, KeyError, IndexError, ValueError) as exc:
-        raise JustificationFailed(str(exc)) from exc
+        raise JustificationFailed(f"{exc!r} - raw response: {resp.text[:500] if 'resp' in locals() else 'n/a'}") from exc
 
     return parse_justification(text)
