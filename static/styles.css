@@ -524,6 +524,20 @@ body {
     line-height: 1.6;
 }
 
+.justify-paths {
+    margin: 14px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 6px;
+    font-size: 0.92rem;
+    color: var(--text-soft);
+}
+
+.justify-paths strong {
+    color: var(--text);
+}
+
 .justify-note {
     margin-top: 12px !important;
     font-size: 0.8rem;

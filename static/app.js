@@ -179,6 +179,7 @@
     justifyBtn.disabled = false;
     justifyBtn.textContent = "✨ Explain this pick";
     justifyCard.hidden = true;
+    document.getElementById("justify-paths").hidden = true;
 
     document.getElementById("card-a").classList.toggle("winner", favorite === a);
     document.getElementById("card-b").classList.toggle("winner", favorite === b);
@@ -256,7 +257,21 @@
         });
       })
       .then(function (data) {
-        document.getElementById("justify-text").textContent = data.justification;
+        document.getElementById("justify-text").textContent = data.summary;
+
+        var pathsEl = document.getElementById("justify-paths");
+        if (data.path_a || data.path_b) {
+          document.getElementById("justify-path-a-name").textContent =
+            document.getElementById("col-a").textContent + ": ";
+          document.getElementById("justify-path-a").textContent = data.path_a || "";
+          document.getElementById("justify-path-b-name").textContent =
+            document.getElementById("col-b").textContent + ": ";
+          document.getElementById("justify-path-b").textContent = data.path_b || "";
+          pathsEl.hidden = false;
+        } else {
+          pathsEl.hidden = true;
+        }
+
         justifyCard.hidden = false;
         justifyBtn.hidden = true;
       })

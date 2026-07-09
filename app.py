@@ -98,17 +98,18 @@ def justify():
 
     cache_key = tuple(sorted((snap_a["name"], snap_b["name"])))
     if cache_key in justification_cache:
-        return jsonify({"justification": justification_cache[cache_key]})
+        return jsonify(justification_cache[cache_key])
 
     try:
-        text = generate_justification(_prediction_payload(snap_a, snap_b))
+        analysis = generate_justification(_prediction_payload(snap_a, snap_b))
     except JustificationUnavailable:
         return jsonify({"error": "AI justification unavailable"}), 503
-    except JustificationFailed:
+    except JustificationFailed as exc:
+        print(f"[justify] Gemini call failed: {exc}", flush=True)
         return jsonify({"error": "AI analysis failed, try again later."}), 502
 
-    justification_cache[cache_key] = text
-    return jsonify({"justification": text})
+    justification_cache[cache_key] = analysis
+    return jsonify(analysis)
 
 
 if __name__ == "__main__":

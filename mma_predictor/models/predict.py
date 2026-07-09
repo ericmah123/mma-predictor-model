@@ -21,6 +21,9 @@ COMPARE_STATS = [
     ("sub_rate", "Submission win rate", True),
     ("win_streak", "Current streak", True),
     ("reach", "Reach (in)", True),
+    ("elo", "Elo rating", True),
+    ("kd_avg", "Knockdowns/15 min", True),
+    ("ctrl_avg", "Control time (sec/min)", True),
 ]
 
 

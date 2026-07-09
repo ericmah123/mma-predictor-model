@@ -93,11 +93,15 @@ curl -X POST http://127.0.0.1:5000/api/justify \
 
 The "✨ Explain this pick" button asks Google Gemini (free tier) for a short
 analyst-style blurb grounded in the model's own numbers. To enable it, get a
-free API key from https://aistudio.google.com/apikey and run the app with:
+free API key from https://aistudio.google.com/apikey, copy `.env.example` to
+`.env`, and set:
 
-```bash
-GEMINI_API_KEY=your-key python app.py
 ```
+GEMINI_API_KEY=your-key
+```
+
+Then run the app as usual (`python app.py`) — it's loaded automatically via
+`python-dotenv`.
 
 Without the key the app works normally — the button simply hides.
 
