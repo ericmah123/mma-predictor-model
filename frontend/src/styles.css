@@ -395,7 +395,6 @@ body {
 .prob-fill-a {
     background: var(--corner-red);
     transform-origin: left;
-    transition: transform 0.5s var(--ease-out-quart);
 }
 
 .prob-fill-b {
@@ -599,8 +598,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
     .fighter-card,
     .predict-btn,
-    .reset-btn,
-    .prob-fill-a {
+    .reset-btn {
         transition: none;
     }
 
