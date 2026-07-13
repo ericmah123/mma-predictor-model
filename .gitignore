@@ -1,6 +1,11 @@
 # Frontend build tooling
 node_modules/
 
+# Local-only project docs
+/CLAUDE.md
+/DESIGN.md
+/PRODUCT.md
+
 # Ignore __pycache__ directories
 __pycache__/
 
