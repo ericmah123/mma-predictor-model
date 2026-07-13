@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, request, send_from_directory
 
 load_dotenv()
 
@@ -19,7 +19,7 @@ from mma_predictor.models.predict import (
     predict_method,
 )
 
-app = Flask(__name__, static_folder="static", template_folder="templates")
+app = Flask(__name__, static_folder="static")
 
 model = load_model()
 method_model = load_method_model()
@@ -31,7 +31,7 @@ name_index = {name.lower(): name for name in fighter_db}
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return send_from_directory(os.path.join(app.static_folder, "dist"), "index.html")
 
 
 @app.route("/api/fighters")
