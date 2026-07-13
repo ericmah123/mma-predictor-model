@@ -7,6 +7,7 @@ grounded in the data.
 
 import os
 import re
+import time
 
 import requests
 
@@ -14,7 +15,8 @@ GEMINI_URL = (
     "https://generativelanguage.googleapis.com/v1beta/"
     "models/gemini-flash-latest:generateContent"
 )
-TIMEOUT_SECONDS = 15
+TIMEOUT_SECONDS = 30
+RETRY_DELAY_SECONDS = 2
 
 
 class JustificationUnavailable(Exception):
@@ -92,24 +94,42 @@ def parse_justification(text):
     return result
 
 
+def _call_gemini(api_key, prompt):
+    resp = requests.post(
+        GEMINI_URL,
+        headers={"x-goog-api-key": api_key},
+        json={"contents": [{"parts": [{"text": prompt}]}]},
+        timeout=TIMEOUT_SECONDS,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+
 def generate_justification(result):
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not api_key:
         raise JustificationUnavailable()
 
+    prompt = build_prompt(result)
+
     try:
-        resp = requests.post(
-            GEMINI_URL,
-            headers={"x-goog-api-key": api_key},
-            json={"contents": [{"parts": [{"text": build_prompt(result)}]}]},
-            timeout=TIMEOUT_SECONDS,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        text = _call_gemini(api_key, prompt)
+    except (requests.Timeout, requests.ConnectionError) as exc:
+        # Transient network hiccups on the free tier are common; one retry
+        # for the same matchup stays within the "one call per matchup" quota
+        # guidance since it doesn't fan out to new matchups.
+        print(f"[justify] Gemini call timed out, retrying once: {exc!r}", flush=True)
+        time.sleep(RETRY_DELAY_SECONDS)
+        try:
+            text = _call_gemini(api_key, prompt)
+        except requests.HTTPError as exc2:
+            raise JustificationFailed(f"{exc2} - body: {exc2.response.text[:500]}") from exc2
+        except (requests.RequestException, KeyError, IndexError, ValueError) as exc2:
+            raise JustificationFailed(f"{exc2!r} - raw response: n/a") from exc2
     except requests.HTTPError as exc:
-        raise JustificationFailed(f"{exc} - body: {resp.text[:500]}") from exc
+        raise JustificationFailed(f"{exc} - body: {exc.response.text[:500]}") from exc
     except (requests.RequestException, KeyError, IndexError, ValueError) as exc:
-        raise JustificationFailed(f"{exc!r} - raw response: {resp.text[:500] if 'resp' in locals() else 'n/a'}") from exc
+        raise JustificationFailed(f"{exc!r} - raw response: n/a") from exc
 
     return parse_justification(text)
