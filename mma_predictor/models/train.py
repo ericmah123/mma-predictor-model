@@ -5,6 +5,8 @@ most recent 15%) — the honest way to measure a sports prediction model.
 The final saved model is refit on all data.
 """
 
+import json
+
 import joblib
 import pandas as pd
 from sklearn.calibration import CalibratedClassifierCV
@@ -13,10 +15,11 @@ from sklearn.metrics import accuracy_score, brier_score_loss, log_loss, roc_auc_
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from mma_predictor.models.preprocess import MODEL_FEATURES
+from mma_predictor.models.preprocess import DATA_DIR, MODEL_FEATURES
 
 MODEL_PATH = "mma_predictor/models/mma_fight_predictor.pkl"
 METHOD_MODEL_PATH = "mma_predictor/models/mma_method_predictor.pkl"
+METRICS_PATH = f"{DATA_DIR}/model_metrics.json"
 
 
 def make_model():
@@ -92,6 +95,15 @@ def train_and_evaluate(df, test_frac=0.15):
     return final, metrics
 
 
+def save_metrics(win_metrics, method_metrics, path=METRICS_PATH):
+    """Persist evaluation metrics as the regression baseline for the next
+    data refresh to compare against (see mma_predictor/models/refresh.py)."""
+    payload = {"win_model": win_metrics, "method_model": method_metrics}
+    with open(path, "w") as f:
+        json.dump(payload, f, indent=2, default=str)
+    return path
+
+
 def main():
     df = pd.read_csv("mma_predictor/data/training_data.csv", parse_dates=["date"])
     model, metrics = train_and_evaluate(df)
@@ -108,6 +120,10 @@ def main():
     print(f"Method model: accuracy {m['accuracy']:.4f} "
           f"(majority-class base rate {m['base_rate']:.4f})")
     print(f"Saved method model -> {METHOD_MODEL_PATH}")
+
+    save_metrics(metrics, m)
+    print(f"Saved metrics -> {METRICS_PATH}")
+    return metrics, m
 
 
 if __name__ == "__main__":
