@@ -1,0 +1,89 @@
+name: Weekly Data Refresh
+
+# Re-syncs raw UFC data from Greco1899/scrape_ufc_stats (they scrape
+# ufcstats.com daily) every Friday, ahead of Saturday fight cards, and
+# rebuilds the training set + fighter DB + models. See
+# mma_predictor/models/refresh.py for the fetch/sanity-check/regression
+# logic this workflow drives.
+
+on:
+  schedule:
+    - cron: "0 13 * * 5" # Fridays, 13:00 UTC (~6am PT / 9am ET)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run refresh pipeline
+        id: refresh
+        run: |
+          if python -m mma_predictor.models.refresh; then
+            echo "status=pass" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=fail" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check whether data actually changed
+        id: diff
+        run: |
+          if git diff --quiet -- mma_predictor/data; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open PR with refreshed data
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REFRESH_STATUS: ${{ steps.refresh.outputs.status }}
+        run: |
+          set -e
+          today="$(date +%Y-%m-%d)"
+          branch="data/weekly-refresh-${today}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add mma_predictor/data/ufc_event_details.csv \
+                  mma_predictor/data/ufc_fight_results.csv \
+                  mma_predictor/data/ufc_fight_stats.csv \
+                  mma_predictor/data/ufc_fighter_tott.csv \
+                  mma_predictor/data/training_data.csv \
+                  mma_predictor/data/fighters.json \
+                  mma_predictor/data/model_metrics.json
+          git commit -m "Weekly data refresh: ${today}"
+          git push origin "$branch"
+
+          if [ "$REFRESH_STATUS" = "pass" ]; then
+            body="Automated weekly re-sync from Greco1899/scrape_ufc_stats. All sanity and regression checks passed — auto-merging. See the workflow run for row-count deltas and metrics."
+          else
+            body="Automated weekly re-sync from Greco1899/scrape_ufc_stats. **A sanity or regression check failed** — left open for manual review instead of auto-merging. See the workflow run log for details."
+          fi
+          gh pr create --title "Weekly data refresh: ${today}" \
+                        --body "$body" \
+                        --base main --head "$branch"
+
+          if [ "$REFRESH_STATUS" = "pass" ]; then
+            gh pr merge "$branch" --squash --delete-branch
+          fi
+
+      - name: Fail the job if checks did not pass
+        if: steps.refresh.outputs.status == 'fail'
+        run: exit 1
